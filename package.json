@@ -1,0 +1,25 @@
+{
+  "name": "stale-while-revalidate-lru-cache",
+  "version": "0.0.1",
+  "main": "index.js",
+  "license": "MIT",
+  "description": "Adds stale-while-revalidate scheme on top of lru-cache that will return dirty/stale values, while new ones are being updated",
+  "scripts": {
+    "lint": "eslint --ignore-path .gitignore .",
+    "test": "npm run lint && node test.js | ./node_modules/tap-spec/bin/cmd.js"
+  },
+  "dependencies": {
+    "lru-cache": "^5.1.1"
+  },
+  "devDependencies": {
+    "eslint": "^6.8.0",
+    "eslint-config-standard": "^14.1.0",
+    "eslint-plugin-import": "^2.20.0",
+    "eslint-plugin-node": "^11.0.0",
+    "eslint-plugin-promise": "^4.2.1",
+    "eslint-plugin-standard": "^4.0.1",
+    "nodemon": "^2.0.2",
+    "tap-spec": "^5.0.0",
+    "tape": "^4.13.0"
+  }
+}
