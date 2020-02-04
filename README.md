@@ -32,17 +32,29 @@ const users = SWRLRU({
   staleWhileRevalidate: 60 * 60 * 1000, // one hour
   validate: async params => {
     const username = params.username
-    const user = await fetchUser({ username })
+    const token = params.token
+    const user = await fetchUser({ username, token })
 
     return user
   }
 })
 
-const user = await users({ username: 'MrFoobar' })
+const user = await users({
+  key: 'MrFooBar',
+  params: {
+    username: 'MrFoobar'
+  }
+})
 console.log(user) // This will not be printed until after validate/fetchUser is done feching the new user
 
 setTimeout(async () => {
-  const user = await user({ username: 'MrFooBar' })
+  const user = await users({
+    key: 'MrFooBar',
+    params: {
+      username: 'MrFooBar',
+      token: gotATokenFromSomewhere
+    }
+  })
   console.log(user) // This will be printed immediately, even though more than a minute has passed
 }, 120 * 1000) // two minutes
 ```
