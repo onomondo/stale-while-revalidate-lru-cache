@@ -5,6 +5,8 @@ const MAX_AGE = 1 * 1000 // 1 second
 const STALE_WHILE_REVALIDATE = 5 * 1000 // 5 seconds
 const TIME_TO_VALIDATE = 1 * 1000 // 1 second
 
+const key = 'foobar'
+const params = { hello: 'world' }
 const get = SRWCache({
   maxAge: MAX_AGE,
   staleWhileRevalidate: STALE_WHILE_REVALIDATE,
@@ -15,9 +17,6 @@ const get = SRWCache({
     }
   }
 })
-
-const key = 'foobar'
-const params = { hello: 'world' }
 
 test('First hit', async t => {
   t.plan(2)
