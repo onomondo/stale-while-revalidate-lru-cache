@@ -22,7 +22,7 @@ test('First hit', async t => {
   t.plan(2)
 
   const start = Date.now()
-  const value = await get(key, params)
+  const value = await get({ key, params })
   const time = Date.now() - start
 
   t.ok(time > 500, 'First hit takes more than 500ms to complete')
@@ -33,7 +33,7 @@ test('Second hit - from cache', async t => {
   t.plan(2)
 
   const start = Date.now()
-  const value = await get(key, params)
+  const value = await get({ key, params })
   const time = Date.now() - start
 
   t.ok(time < 50, 'Second hit is from cache and takes less than 50ms to complete')
@@ -46,7 +46,7 @@ test('Third hit - Is stale, but quickly returned', async t => {
   await new Promise(resolve => setTimeout(resolve, MAX_AGE + 100)) // Wait MAX_AGE plus 100 ms
 
   const start = Date.now()
-  const value = await get(key, params)
+  const value = await get({ key, params })
   const time = Date.now() - start
 
   t.ok(time < 50, 'Third hit is stale, but from cache, and takes less than 50ms to complete')
@@ -59,7 +59,7 @@ test('Fourth hit - Is stale, and too old to validate. Cache should not be used, 
   await new Promise(resolve => setTimeout(resolve, MAX_AGE + STALE_WHILE_REVALIDATE + TIME_TO_VALIDATE + 100)) // Wait MAX_AGE + STALE_WHILE_REVALIDATE + TIME_TO_VALIDATE plus 100 ms
 
   const start = Date.now()
-  const value = await get(key, params)
+  const value = await get({ key, params })
   const time = Date.now() - start
 
   t.ok(time > 500, 'Fourth hit is stale and too old to validate, so should take more than 500ms to complete')
