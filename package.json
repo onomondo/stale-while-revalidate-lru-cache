@@ -6,7 +6,7 @@
   "description": "Adds stale-while-revalidate scheme on top of lru-cache that will return dirty/stale values, while new ones are being updated",
   "scripts": {
     "lint": "eslint --ignore-path .gitignore .",
-    "test": "npm run lint && node test.js | ./node_modules/tap-spec/bin/cmd.js"
+    "test": "node test.js | ./node_modules/tap-spec/bin/cmd.js"
   },
   "dependencies": {
     "lru-cache": "^5.1.1"
