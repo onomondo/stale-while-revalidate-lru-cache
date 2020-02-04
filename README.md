@@ -5,7 +5,7 @@ An LRU cache with a `maxAge` and a `staleWhileRevalidate`, that will return dirt
 Follows the `stale-while-revalidate` scheme implemented in browsers, https://web.dev/stale-while-revalidate/.
 
 
-`stale-while-revalidate-lru-cache` sits on top of `lru-cache`. Adds a way to update stale items (items that are older than `maxAge`), but continue to return the cached value.
+`stale-while-revalidate-lru-cache` sits on top of `lru-cache`. Adds a way to update/revalidate stale items (items that are older than `maxAge`), but continue to return the cached value.
 
 Its usage is when you are using `lru-cache` asynchronously and are ok with returning dirty/stale/old values.
 
@@ -22,9 +22,9 @@ const SWRLRU = require('stale-while-revalidate-lru-cache')
 
 // A cache that will contain some users.
 // If the cache is older than a minute:
-//   If it's less than an hour since last update:
+//   If it's less than an hour since last update/validation:
 //     Return stale/dirty user, and `validate` in the background
-//   If it's been more than an hour since last update:
+//   If it's been more than an hour since last update/validation:
 //     Wait for `validate` and then return
 const users = SWRLRU({
   max: 30000, // Max 30,000 cached items
