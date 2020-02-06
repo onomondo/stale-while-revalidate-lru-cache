@@ -10,7 +10,7 @@ module.exports = ({ maxAge, validate, staleWhileRevalidate, ...rest }) => {
 
   return async ({ key, params }) => {
     const cachedItem = cache.has(key) && cache.peek(key)
-    const isCached = cachedItem && cachedItem.value !== undefined
+    const isCached = cachedItem && !cachedItem.isValidating
     const isValidating = cachedItem && cachedItem.isValidating
     const isStale = isCached && cachedItem.lastValidation + maxAge < Date.now()
     const isTooOldToReturn = isCached && ((cachedItem.lastValidation + maxAge + staleWhileRevalidate) < Date.now())

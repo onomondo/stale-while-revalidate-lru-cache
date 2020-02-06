@@ -65,3 +65,25 @@ test('Fourth hit - Is stale, and too old to validate. Cache should not be used, 
   t.ok(time > 500, 'Fourth hit is stale and too old to validate, so should take more than 500ms to complete')
   t.equals(value.n, 42, 'Cache has correct stored value')
 })
+
+test('Allow caching of undefined values', async t => {
+  t.plan(4)
+
+  let calls = 0
+  const get = SRWCache({
+    maxAge: MAX_AGE,
+    staleWhileRevalidate: STALE_WHILE_REVALIDATE,
+    validate: () => {
+      calls += 1
+      return undefined
+    }
+  })
+
+  const firstValue = await get({ key, params })
+  t.equals(firstValue, undefined, 'First returned undefined')
+  t.equals(calls, 1, 'Was called once')
+
+  const secondValue = await get({ key, params })
+  t.equals(secondValue, undefined, 'Returned value is still undefined')
+  t.equals(calls, 1, 'Was not called again, and used cached value')
+})
