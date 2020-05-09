@@ -87,3 +87,90 @@ test('Allow caching of undefined values', async t => {
   t.equals(secondValue, undefined, 'Returned value is still undefined')
   t.equals(calls, 1, 'Was not called again, and used cached value')
 })
+
+test('Throws in validation method should throw in get method', async t => {
+  t.plan(1)
+
+  const errorMessage = 'some error text'
+  const get = SRWCache({
+    maxAge: MAX_AGE,
+    staleWhileRevalidate: STALE_WHILE_REVALIDATE,
+    validate: () => {
+      throw new Error(errorMessage)
+    }
+  })
+
+  try {
+    await get({ key, params })
+    t.fail('This line should not be executed, as the validation throws an error')
+  } catch (err) {
+    t.equals(err.message, errorMessage, 'Error thrown had correct message')
+  }
+})
+
+test('Promise rejection in validation method should throw in get method', async t => {
+  t.plan(1)
+
+  const errorMessage = 'Something was unavailable'
+  const get = SRWCache({
+    maxAge: MAX_AGE,
+    staleWhileRevalidate: STALE_WHILE_REVALIDATE,
+    validate: () => new Promise((resolve, reject) => setTimeout(() => reject(new Error(errorMessage)), 100))
+  })
+
+  try {
+    await get({ key, params })
+    t.fail('This line should not be executed, as the validation throws an error')
+  } catch (err) {
+    t.equals(err.message, errorMessage, 'Error thrown had correct message')
+  }
+})
+
+test('If there are several pending validate promises, they should all reject', async t => {
+  t.plan(4)
+
+  const errorMessage = 'Something was unavailable'
+  const get = SRWCache({
+    maxAge: MAX_AGE,
+    staleWhileRevalidate: STALE_WHILE_REVALIDATE,
+    validate: () => new Promise((resolve, reject) => setTimeout(() => reject(new Error(errorMessage)), 100))
+  })
+
+  asyncGet()
+  asyncGet()
+  asyncGet()
+  asyncGet()
+
+  async function asyncGet () {
+    try {
+      await get({ key, params })
+      t.fail('This line should not be executed, as the validation throws an error')
+    } catch (err) {
+      t.equals(err.message, errorMessage, 'Error thrown had correct message')
+    }
+  }
+})
+
+test('Some async thing', async t => {
+  t.plan(1)
+
+  const errorMessage = 'Some async error'
+  async function someErrornousAsyncMethod () {
+    return new Promise((resolve, reject) => setTimeout(() => reject(new Error(errorMessage))))
+  }
+  const get = SRWCache({
+    maxAge: MAX_AGE,
+    staleWhileRevalidate: STALE_WHILE_REVALIDATE,
+    validate: async () => {
+      await someErrornousAsyncMethod()
+      return 'This should never be returned as the previous line rejects'
+    }
+  })
+
+  try {
+    await get({ key, params })
+    t.fail('This line should not be executed, as the validation throws an error')
+  } catch (err) {
+    t.equals(err.message, errorMessage, 'Error thrown had correct message')
+  }
+})
