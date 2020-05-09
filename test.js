@@ -174,3 +174,95 @@ test('Some async thing', async t => {
     t.equals(err.message, errorMessage, 'Error thrown had correct message')
   }
 })
+
+test('Validation method should be re-called after errors', async t => {
+  t.plan(6)
+
+  let validationCalls = 0
+  const get = SRWCache({
+    maxAge: MAX_AGE,
+    staleWhileRevalidate: STALE_WHILE_REVALIDATE,
+    validate: async () => {
+      validationCalls += 1
+      return new Promise((resolve, reject) => setTimeout(reject, TIME_TO_VALIDATE))
+    }
+  })
+
+  asyncGet(1)
+  asyncGet(1)
+  asyncGet(1)
+
+  // Wait until after the first validation method has cleared, then call again
+  setTimeout(() => {
+    asyncGet(2)
+    asyncGet(2)
+    asyncGet(2)
+  }, TIME_TO_VALIDATE + 100)
+
+  async function asyncGet (validationCallsExpected) {
+    try {
+      await get({ key, params })
+      t.fail('This line should not be executed, as the validation throws an error')
+    } catch (err) {
+      t.equals(validationCallsExpected, validationCalls, 'Had the correct number of validation calls')
+    }
+  }
+})
+
+test('Validation call changes state (simulates unstable server)', async t => {
+  t.plan(12)
+
+  let validationCalls = 0
+  const okValue = 'The call returned a positive value'
+  const get = SRWCache({
+    maxAge: MAX_AGE,
+    staleWhileRevalidate: STALE_WHILE_REVALIDATE,
+    validate: async () => {
+      validationCalls += 1
+
+      if (validationCalls === 1) return new Promise((resolve, reject) => setTimeout(reject, TIME_TO_VALIDATE))
+      if (validationCalls === 2) return new Promise((resolve, reject) => setTimeout(() => resolve(okValue), TIME_TO_VALIDATE))
+      if (validationCalls === 3) return new Promise((resolve, reject) => setTimeout(reject, TIME_TO_VALIDATE))
+      if (validationCalls === 4) return new Promise((resolve, reject) => setTimeout(() => resolve(okValue), TIME_TO_VALIDATE))
+    }
+  })
+
+  asyncErr(1)
+  asyncErr(1)
+
+  // Wait until first call is done
+  setTimeout(() => {
+    asyncOk(2)
+    asyncOk(2)
+  }, TIME_TO_VALIDATE + 100)
+
+  // Wait until first two calls are done, and cache is removed
+  setTimeout(() => {
+    asyncErr(3)
+    asyncErr(3)
+  }, MAX_AGE + STALE_WHILE_REVALIDATE + 2 * TIME_TO_VALIDATE + 300)
+
+  setTimeout(() => {
+    asyncOk(4)
+    asyncOk(4)
+  }, MAX_AGE + STALE_WHILE_REVALIDATE + 3 * TIME_TO_VALIDATE + 500)
+
+  async function asyncErr (validationCallsExpected) {
+    try {
+      await get({ key, params })
+      t.fail('This line should not be executed, as the validation throws an error')
+    } catch (err) {
+      t.equals(validationCallsExpected, validationCalls, 'Had the correct number of validation calls')
+    }
+  }
+
+  async function asyncOk (validationCallsExpected) {
+    try {
+      const res = await get({ key, params })
+      t.equals(res, okValue, 'Validation method returned correct value')
+      t.equals(validationCallsExpected, validationCalls, 'Had the correct number of validation calls')
+    } catch (err) {
+      t.fail('This line should not be executed, as the validation throws an error')
+    }
+  }
+})

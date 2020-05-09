@@ -59,8 +59,8 @@ module.exports = ({ maxAge, validate, staleWhileRevalidate, ...rest }) => {
 
       return value
     } catch (err) {
-      cachedItem.validationPromises = []
-      cachedItem.isValidating = false
+      // Remove from cache, as it will need to be refetched
+      cache.del(key)
 
       process.nextTick(() => validationPromises.forEach(([_, reject]) => reject(err)))
       throw err
