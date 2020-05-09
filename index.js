@@ -18,12 +18,12 @@ module.exports = ({ maxAge, validate, staleWhileRevalidate, ...rest }) => {
     // Is not in cache
     if (!isCached && !isValidating) {
       cache.set(key, {
-        validate: []
+        validationPromises: []
       })
 
       return validateCache({ key, params })
     }
-    if (!isCached && isValidating) return new Promise(resolve => cache.peek(key).validate.push(resolve))
+    if (!isCached && isValidating) return new Promise((resolve, reject) => cache.peek(key).validationPromises.push([resolve, reject]))
 
     // Is in cache, and not stale
     if (!isStale) return cache.get(key).value
@@ -38,24 +38,32 @@ module.exports = ({ maxAge, validate, staleWhileRevalidate, ...rest }) => {
     // Is in cache, is stale, and older than staleWhileRevalidate, so validate cache, before returninga
     if (!isValidating) return validateCache({ key, params })
 
-    return new Promise(resolve => cache.peek(key).validate.push(resolve))
+    return new Promise((resolve, reject) => cache.peek(key).validationPromises.push([resolve, reject]))
   }
 
   async function validateCache ({ key, params }) {
     const cachedItem = cache.peek(key)
+    const { validationPromises } = cachedItem
     cachedItem.isValidating = true
 
-    const value = await validate(params)
-    const validateCalls = cachedItem.validate
-    cachedItem.value = value
-    cachedItem.validate = []
-    cachedItem.isValidating = false
-    cachedItem.lastValidation = Date.now()
+    try {
+      const value = await validate(params)
+      cachedItem.value = value
+      cachedItem.validationPromises = []
+      cachedItem.isValidating = false
+      cachedItem.lastValidation = Date.now()
 
-    // Call the other validate after this one has returned.
-    // It guarantees the same order as the cacher was called
-    process.nextTick(() => validateCalls.forEach(fn => fn(value)))
+      // Resolve the other validate after this one has returned.
+      // It guarantees the same order as the cacher was called
+      process.nextTick(() => validationPromises.forEach(([resolve]) => resolve(value)))
 
-    return value
+      return value
+    } catch (err) {
+      cachedItem.validationPromises = []
+      cachedItem.isValidating = false
+
+      process.nextTick(() => validationPromises.forEach(([_, reject]) => reject(err)))
+      throw err
+    }
   }
 }

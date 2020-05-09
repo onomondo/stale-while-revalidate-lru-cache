@@ -17,6 +17,8 @@ Note: Does not contain a "set" method, but all "sets" are being done through the
 
 ## Usage
 
+Please read the `Error handling` for more production-ready example.
+
 ``` js
 const SWRLRU = require('stale-while-revalidate-lru-cache')
 
@@ -57,4 +59,33 @@ setTimeout(async () => {
   })
   console.log(user) // This will be printed immediately, even though more than a minute has passed
 }, 120 * 1000) // two minutes
+```
+
+## Error handling
+
+If there is an error thrown, or a promise rejected, in the `validate` method, then the lookup will throw an error. This needs to be handled, by try-catching:
+
+``` js
+const users = SWRLRU({
+  max: 30000, // Max 30,000 cached items
+  maxAge: 60 * 1000, // one minute
+  staleWhileRevalidate: 60 * 60 * 1000, // one hour
+  validate: async ({ username }) => {
+    const user = await fetchUserFromDatabase({ username })
+    return user
+  }
+})
+
+try {
+  const user = await users({
+    key: 'a1b2c3',
+    params: {
+      username: 'MrFoobar'
+    }
+  })
+
+  console.log(user)
+} catch (err) {
+  console.error('Could not get user from database', err)
+}
 ```
