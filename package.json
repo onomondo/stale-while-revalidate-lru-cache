@@ -1,6 +1,6 @@
 {
   "name": "stale-while-revalidate-lru-cache",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "main": "index.js",
   "license": "MIT",
   "description": "Adds stale-while-revalidate scheme on top of lru-cache that will return dirty/stale values, while new ones are being updated",
